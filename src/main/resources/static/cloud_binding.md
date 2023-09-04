@@ -93,7 +93,7 @@ Just producing a message work slightly differently.
 You will need to inject a [StreamBridge](spring_cloud_stream_example.md#streambridge) in your class, and use it to send a message to the
 topic.
 
-example: [Producer.java](src/main/java/com/example/cloud/function/producer/Producer.java)
+example: [Producer.java](../../java/com/example/cloud/function/producer/Producer.java)
 
 ```java
 import org.springframework.cloud.stream.function.StreamBridge;

@@ -34,7 +34,7 @@ You will need to import the following dependencies :
 
 This section will explain how to edit the application.yml to configure the different properties bindings.
 
-[Configuration properties](configuration_properties.md)
+[Configuration properties](configuration_properties.md#configuration-file-editing)
 
 ---
 
@@ -42,7 +42,7 @@ This section will explain how to edit the application.yml to configure the diffe
 
 In this section, there are documented examples to help understanding the different processes.
 
-[Cloud binding](cloud_binding.md)
+[Cloud binding](cloud_binding.md#code-binding-and-producing)
 
 ---
 
