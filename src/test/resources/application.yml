@@ -1,0 +1,36 @@
+spring:
+  kafka:
+    bootstrap-servers: localhost:5000
+    properties:
+      schema-registry:
+        url: http://localhost:5001
+      security-protocol: PLAINTEXT
+  cloud:
+    function:
+      definition: consumeTopic;consumeTopicAndProduceToTopic
+    stream:
+      bindings:
+        consumeTopic-in-0:
+          destination: topic-consumer-test
+          group: group-test
+        produceToTopic-out-0:
+          destination: topic-producer-test
+        consumeTopicAndProduceTopic-in-0:
+          destination: topic-function-consumer-test
+          group: group-test
+        consumeTopicAndProduceToTopic-out-0:
+          destination: topic-function-producer-test
+      kafka:
+        bindings:
+          consumeTopic-in-0:
+            consumer:
+              enable-dlq: true
+              dlq-name: topic-consumer-test-dlq
+          consumeTopicAndProduceTopic-in-0:
+            consumer:
+              enable-dlq: true
+              dlq-name: topic-function-consumer-test-dlq
+        binder:
+          # Auto creation of topic with binding call lead to inconsistent topic names.
+          # Moreover, in case of professional usage, it may not even be possible to auto create topics.
+          auto-create-topics: false

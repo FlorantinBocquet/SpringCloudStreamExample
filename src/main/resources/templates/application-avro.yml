@@ -1,0 +1,140 @@
+spring:
+  kafka:
+    # ---
+    # This config is for kafka cluster without security
+    properties:
+      schema.registry.url: ${schema_registry_url}
+      bootstrap.servers: ${kafka_cluster_address}
+      security.protocol: PLAINTEXT
+    # ---
+    #
+    # ---
+    # This config is for kafka cluster with SASL security protocol
+    #    properties:
+    #      # ------
+    #      # Specific config for the schema registry
+    #      basic.auth.user.info: ${kafka_username}:${kafka_password}
+    #      basic.auth.credentials.source: USER_INFO
+    #      schema.registry.url: ${schema_registry_url}
+    #      # ------
+    #      #
+    #      # ------
+    #      # Specific config for the kafka cluster
+    #      bootstrap.servers: ${kafka_cluster_address}
+    #      security.protocol: SASL_SSL
+    #      sasl.mechanism: PLAIN
+    #      sasl.jaas.config: org.apache.kafka.common.security.scram.ScramLoginModule required username="${kafka_username}" password="${kafka_password}";
+    #      # ------
+    # ---
+  cloud:
+    # ---
+    # The cloud function allows to bind a function to a topic
+    function:
+      definition: consumerExample1;consumerExample2
+    # ---
+    stream:
+      bindings:
+        # To really bind a cloud function to a binder, you must give the name of the function as the first part of the
+        # binding name
+        consumer-example1-in-0:
+          consumer:
+            max-attempts: 1
+          content-type: application/*+avro
+          # ---
+          # It's the topic name your binding will be linked with.
+          destination: ${consumer_topic_1}
+          # ---
+          group: ${consumer_group}
+        consumer-example2-in-0:
+          consumer:
+            max-attempts: 1
+          content-type: application/*+avro
+          destination: ${consumer_topic_2}
+          group: ${consumer_group}
+        producer-example-out-0:
+          content-type: application/*+json
+          producer:
+            use-native-encoding: true
+          destination: ${producer_topic}
+      kafka:
+        binder:
+          auto-create-topics: false
+          # ---
+          # By defining config here, every consumer will be affected by this config
+          # If you want to define a specific config for a specific consumer, you need to define it in the
+          # bindings.<name>.consumer.configuration of the topic you want
+          # (cf: consumer-example1-in-0 key / value deserializer binding below)
+          consumer-properties:
+            # ------
+            # Even if this value is already set in spring.data.kafka.properties, it needs to be set here too
+            # because it's a different and independent spring module
+            # However the connection to the schema registry is already set in the spring.data.kafka.properties
+            # so you don't need to set it here again
+            schema.registry.url: ${schema_registry_url}
+            topic.name.strategy: io.confluent.kafka.serializers.subject.TopicNameStrategy
+            # ------
+            #
+            # ------
+            # If this value is at false, all received message will be of type GenericData#Record
+            # By turning it to true, the message will be of the type defined in the schema
+            # This value is false by default
+            specific.avro.reader: true
+            # ------
+          # ---
+          #
+          # ---
+          # By defining config here, every producer will be affected by this config
+          # If you want to define a specific config for a specific producer, you need to define it in the
+          # bindings.<name>.producer.configuration of the topic you want
+          # or if it's for a dlq producer
+          # bindings.<name>.consumer.dlq-producer-properties.configuration of the topic you want
+          producer-properties:
+            schema.registry.url: ${schema_registry_url}
+            topic.name.strategy: io.confluent.kafka.serializers.subject.TopicNameStrategy
+            specific.avro.reader: true
+          # ---
+        bindings:
+          # ---
+          # Consumer deserialization example 1
+          consumer-example1-in-0:
+            consumer:
+              configuration:
+                key.deserializer: org.apache.kafka.common.serialization.StringDeserializer
+                value.deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer
+          # ---
+          #
+          # ---
+          # Consumer deserialization example 2 with dlq
+          consumer-example2-in-0:
+            consumer:
+              configuration:
+                key.deserializer: org.apache.kafka.common.serialization.StringDeserializer
+                value.deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer
+              # ------
+              # With this you will enable the dlq.
+              # In case of any exception thrown by the consumer, the message will be sent to the dlq associated to the
+              # property dlq-name
+              enable-dlq: true
+              dlq-name: ${container_received_topic_name_dlq}
+              # ------
+              #
+              # ------
+              # Dlq producer serialization from the consumer example 2
+              # That part cover the mapping for the dlq producer, and also use the kafka.binder.producer-properties
+              # i.e : it will set schema.registry.url, topic.name.strategy and specific.avro.reader values from the
+              # kafka.binder.producer-properties
+              dlq-producer-properties:
+                configuration:
+                  key.serializer: org.apache.kafka.common.serialization.StringSerializer
+                  value.serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+              # ------
+          # ---
+          #
+          # ---
+          # Producer serialization example
+          producer-example-out-0:
+            producer:
+              configuration:
+                key.serializer: org.apache.kafka.common.serialization.StringSerializer
+                value.serializer: org.springframework.kafka.support.serializer.JsonSerializer
+          # ---
